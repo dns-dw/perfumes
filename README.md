@@ -87,24 +87,89 @@ O manualmente, desde la rama que quieras publicar:
 
 ## 3. Cómo funciona el buscador
 
-1. **Resolución**: se descarga la página de búsqueda de Fragrantica (a través de proxies
-   CORS públicos, porque Fragrantica no envía cabeceras CORS) y se usa su buscador
-   interno (Algolia) para encontrar la ficha del perfume; si la clave efímera de Algolia
-   falla, se analizan los enlaces `/perfume/` del HTML como alternativa.
-2. **Notas**: se descarga la ficha del perfume y se intenta obtener la pirámide completa
-   (salida/corazón/fondo); si Fragrantica la protege (Cloudflare / límite de peticiones),
-   se usan las notas principales visibles en la página.
-3. **Enriquecimiento**: las notas se envían a Groq (`openai/gpt-oss-20b`, API compatible
-   con OpenAI) que devuelve JSON con descripción, duración, proyección, notas y referencia.
+El buscador funciona en **dos modos**:
+
+### Modo A — Solo IA (por defecto, cero configuración)
+
+El nombre del perfume se envía a Groq (`openai/gpt-oss-20b`), que genera las notas
+de salida/corazón/fondo, la descripción, la duración, la proyección y la referencia
+conocida a partir de su conocimiento perfumístico. Las notas se etiquetan como
+**«inferidas por IA»**.
+
+### Modo B — Con pasarela de Fragrantica (notas reales, opcional)
+
+Fragrantica no envía cabeceras CORS y su Cloudflare desafía las peticiones que salen
+de IPs de datacenter (proxies CORS públicos, GitHub Actions, etc.), por lo que el
+navegador no puede descargarla directamente. La solución es una **pasarela personal
+gratuita con Google Apps Script** (5 minutos, sin tarjeta):
+
+1. Entra en [script.google.com](https://script.google.com) → **Nuevo proyecto**.
+2. Pega este código y guárdalo (`Ctrl+S`):
+
+   ```javascript
+   function doPost(e) {
+     try {
+       var p = JSON.parse(e.postData.contents);
+       var url = p.url;
+       var permitida = /^https:\/\/([a-z0-9-]+\.)?fragrantica\.[a-z.]+/i.test(url)
+         || /^https:\/\/[A-Z0-9]+-dsn\.algolia\.net\//i.test(url);
+       if (!url || !permitida) {
+         return salida('URL no permitida. Solo fragrantica/algolia.', 400);
+       }
+       var opts = {
+         method: (p.method || 'GET').toLowerCase(),
+         muteHttpExceptions: true,
+         followRedirects: true,
+         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0' }
+       };
+       if (p.headers) {
+         var h = JSON.parse(JSON.stringify(p.headers));
+         for (var k in h) opts.headers[k] = h[k];
+       }
+       if (p.body) opts.payload = p.body;
+       var r = UrlFetchApp.fetch(url, opts);
+       return salida(r.getContentText(), r.getResponseCode());
+     } catch (err) {
+       return salida('Error en la pasarela: ' + err.message, 500);
+     }
+   }
+
+   function salida(texto, codigo) {
+     // Apps Script añade Access-Control-Allow-Origin: * en apps web
+     return ContentService.createTextOutput(texto)
+       .setMimeType(ContentService.MimeType.TEXT);
+   }
+   ```
+
+3. **Implementar → Nueva implementación** → tipo: **Aplicación web** ·
+   ejecutar como: **Yo** · quién tiene acceso: **Cualquier usuario** · Implementar.
+4. Copia la URL de la aplicación web (termina en `/exec`).
+5. En el dashboard, pulsa **«Configurar pasarela de Fragrantica»** y pega la URL
+   (se guarda solo en tu navegador, en `localStorage`).
+
+Con la pasarela activa, cada búsqueda hace esto (siempre respetando pausas de ~1 s):
+
+1. La pasarela descarga la página de búsqueda de Fragrantica (sus IPs de Google
+   pasan el Cloudflare del sitio) y se extrae la **clave efímera** de su buscador
+   interno (Algolia, válida ~5 min).
+2. La consulta a Algolia va también por la pasarela (la clave está ligada a la IP
+   que la generó) y devuelve la ficha exacta: nombre, casa, año y URL.
+3. La pasarela descarga la ficha del perfume: se extraen las **notas principales**
+   y, si Fragrantica lo permite, la **pirámide completa** (salida/corazón/fondo)
+   desde su endpoint interno.
+4. Groq redacta la descripción, duración, proyección y referencia usando las
+   **notas reales** (etiquetadas como «Notas extraídas de Fragrantica»).
 
 ### Límites y buen uso
 
-- Pausa de ~1,2 s entre peticiones a Fragrantica y reintentos limitados (respeto de rate limits).
-- Resultados cacheados en `localStorage` durante 24 h para no repetir consultas.
-- Fragrantica está protegida por Cloudflare: en algún momento puede bloquear las peticiones
-  del proxy; en ese caso el buscador informa del error y sigue funcionando la Sección 1.
-- La cuota gratuita de Groq tiene límite de peticiones/minuto; si se agota, espera un momento
-  y vuelve a intentarlo.
+- Pausa de ~1 s entre peticiones y resultados cacheados en `localStorage` 24 h
+  (no se repiten consultas).
+- La pasarela de Apps Script tiene cuota gratuita de ~20.000 peticiones/día:
+  de sobra para uso personal.
+- Si la pasarela falla (cuota, cambios en Fragrantica), el buscador avisa y
+  genera la ficha en Modo A (solo IA) automáticamente.
+- La cuota gratuita de Groq tiene límite de peticiones/minuto; si se agota,
+  espera un momento y reintenta.
 
 ---
 
