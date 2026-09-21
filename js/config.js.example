@@ -1,0 +1,5 @@
+// Copia este archivo a js/config.js y pon tu clave real,
+// o genera js/config.js automáticamente desde tu .env con:
+//   node scripts/generar-config.js
+// js/config.js está ignorado por git.
+window.GROQ_API_KEY = "gsk_tu_clave_aqui";

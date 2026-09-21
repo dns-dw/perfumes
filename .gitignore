@@ -1,0 +1,7 @@
+# Claves y configuración local — nunca subir al repositorio
+.env
+js/config.js
+
+# Pruebas locales (fixtures y dependencias)
+.test/node_modules
+.test/package-lock.json

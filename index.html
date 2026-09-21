@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Dashboard de Perfumes</title>
+  <meta name="description" content="Dashboard personal de perfumes: colección de favoritos y buscador con notas olfativas, duración, proyección y referencias conocidas.">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧴</text></svg>">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1>🧴 Mi Dashboard de Perfumes</h1>
+      <p class="tagline">Mi colección de favoritos y buscador olfativo con inteligencia artificial</p>
+      <nav class="main-nav">
+        <a href="#favoritos">Mis Perfumes Favoritos</a>
+        <a href="#buscador">Buscador de Perfumes</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- ===================== SECCIÓN 1: FAVORITOS ===================== -->
+    <section id="favoritos" class="seccion">
+      <h2>Mis Perfumes Favoritos</h2>
+      <p class="seccion-desc">Mi tabla principal con los perfumes de mi colección, sus notas y recomendaciones de uso.</p>
+
+      <div class="filtros" role="group" aria-label="Filtros de la tabla">
+        <div class="filtro-grupo">
+          <span class="filtro-titulo">Familia olfativa:</span>
+          <div class="filtro-botones" id="filtro-familia">
+            <button class="btn-filtro activo" data-familia="todas">Todas</button>
+            <button class="btn-filtro" data-familia="cítrica">Cítrica</button>
+            <button class="btn-filtro" data-familia="aromática">Aromática</button>
+            <button class="btn-filtro" data-familia="oriental">Oriental</button>
+            <button class="btn-filtro" data-familia="amaderada">Amaderada</button>
+          </div>
+        </div>
+        <div class="filtro-grupo">
+          <span class="filtro-titulo">Ocasión de uso:</span>
+          <div class="filtro-botones" id="filtro-ocasion">
+            <button class="btn-filtro activo" data-ocasion="todas">Todas</button>
+            <button class="btn-filtro" data-ocasion="día">Día</button>
+            <button class="btn-filtro" data-ocasion="oficina">Oficina</button>
+            <button class="btn-filtro" data-ocasion="noche">Noche</button>
+            <button class="btn-filtro" data-ocasion="frío">Frío</button>
+            <button class="btn-filtro" data-ocasion="calor">Calor</button>
+          </div>
+        </div>
+        <div class="filtro-grupo filtro-busqueda">
+          <label class="filtro-titulo" for="buscar-tabla">Buscar en la tabla:</label>
+          <input type="search" id="buscar-tabla" placeholder="Nombre, casa o nota…" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="tabla-contenedor">
+        <table id="tabla-perfumes">
+          <thead>
+            <tr>
+              <th>Perfume</th>
+              <th>Casa/Marca</th>
+              <th>Año</th>
+              <th>Notas de Salida</th>
+              <th>Notas de Corazón</th>
+              <th>Notas de Fondo</th>
+              <th>Descripción</th>
+              <th>Duración</th>
+              <th>Proyección</th>
+              <th>Recomendación de uso</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-perfumes"></tbody>
+        </table>
+        <p id="tabla-vacia" class="tabla-vacia" hidden>No hay perfumes que coincidan con los filtros seleccionados.</p>
+      </div>
+    </section>
+
+    <!-- ===================== SECCIÓN 2: BUSCADOR ===================== -->
+    <section id="buscador" class="seccion">
+      <h2>Buscador de Perfumes</h2>
+      <p class="seccion-desc">
+        Escribe el nombre de cualquier perfume: consultamos Fragrantica para obtener sus notas y usamos
+        inteligencia artificial (Groq) para redactar la descripción, la duración, la proyección y una
+        referencia conocida cercana (a qué perfume famoso se parece).
+      </p>
+
+      <form id="form-buscador" class="form-buscador">
+        <input type="search" id="input-perfume" placeholder="Ej.: Dior Sauvage, Afnan Turathi Blue, Rasasi Hawas…" autocomplete="off" required>
+        <button type="submit" id="btn-buscar">Buscar</button>
+      </form>
+      <p class="nota-api">
+        🔑 Se requiere clave de API de Groq. Configúrala en <code>.env</code> (local) o en
+        <code>GitHub Secrets</code> (producción); también puedes <button type="button" id="btn-config-clave" class="enlace-boton">introducirla aquí</button>
+        y se guardará solo en tu navegador.
+      </p>
+
+      <div id="estado-busqueda" class="estado-busqueda" hidden></div>
+
+      <article id="resultado" class="resultado" hidden></article>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>Datos de notas extraídos de <a href="https://www.fragrantica.es/" target="_blank" rel="noopener">Fragrantica</a>.
+      Descripciones generadas con <a href="https://groq.com" target="_blank" rel="noopener">Groq</a> (openai/gpt-oss-20b).</p>
+    </div>
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/buscador.js"></script>
+</body>
+</html>
